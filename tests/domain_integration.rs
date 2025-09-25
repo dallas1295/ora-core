@@ -6,13 +6,14 @@ fn create_and_reload_note() -> Result<(), NoteError> {
     let tmpdir = TempDir::new().unwrap();
     let dir = tmpdir.path();
 
-    // 1. Create a note, ensure file exists
     let note = LocalNote::create("Test Note".into(), "Hello, world".into(), dir)?;
     assert!(note.path.exists());
 
-    // 2. Reload from disk and ensure content matches
+    assert!(note.content.starts_with("# Test Note"));
+
     let reloaded = note.reload()?;
-    assert_eq!(reloaded.content, "Hello, world");
+    assert!(reloaded.content.contains("Hello, world"));
+    assert_eq!(reloaded.title, "Test Note");
 
     Ok(())
 }
@@ -24,13 +25,9 @@ fn update_content_and_save() -> Result<(), NoteError> {
 
     let note = LocalNote::create("Content Note".into(), "Original".into(), dir)?;
 
-    // 1. Make a new note in memory with updated content
     let updated = note.with_content("Updated".into());
-
-    // 2. Persist the updated note
     updated.save()?;
 
-    // 3. Reload from disk, check content
     let reloaded = updated.reload()?;
     assert_eq!(reloaded.content, "Updated");
 
@@ -44,15 +41,14 @@ fn update_title_and_persist_rename() -> Result<(), NoteError> {
 
     let note = LocalNote::create("Title Note".into(), "data".into(), dir)?;
 
-    // 1. Generate new note with new title
     let new_note = note.with_title("Renamed".into())?;
-
-    // 2. Persist rename to disk
     new_note.persist_rename(&note.path)?;
 
-    // old file should be gone, new should exist
     assert!(!note.path.exists());
     assert!(new_note.path.exists());
+    assert!(new_note.content.starts_with("# Renamed"));
+    assert_eq!(new_note.title, "Renamed");
+    assert!(new_note.path.ends_with("renamed.md"));
 
     Ok(())
 }
@@ -72,13 +68,25 @@ fn delete_removes_file() -> Result<(), NoteError> {
 }
 
 #[test]
-fn invalid_title_should_fail() {
+fn invalid_title_is_sanitized() -> Result<(), NoteError> {
     let tmpdir = TempDir::new().unwrap();
     let dir = tmpdir.path();
 
-    let bad = LocalNote::create("bad/title".into(), "oops".into(), dir);
-    assert!(matches!(bad, Err(NoteError::InvalidTitle)));
+    let bad = LocalNote::create("bad/title".into(), "oops".into(), dir)?;
+    assert_eq!(bad.title, "bad_title");
+    assert!(bad.path.ends_with("bad_title.md"));
 
-    let empty = LocalNote::create("    ".into(), "empty".into(), dir);
-    assert!(matches!(empty, Err(NoteError::InvalidTitle)));
+    Ok(())
+}
+
+#[test]
+fn empty_title_defaults_to_untitled() -> Result<(), NoteError> {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path();
+
+    let untitled = LocalNote::create("    ".into(), "empty".into(), dir)?;
+    assert_eq!(untitled.title, "Untitled");
+    assert!(untitled.path.ends_with("untitled.md"));
+
+    Ok(())
 }
