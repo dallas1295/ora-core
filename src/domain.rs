@@ -15,6 +15,7 @@ pub enum NoteError {
 }
 
 /// A note stored locally on disk as a Markdown file (`.md`).
+#[derive(Clone)]
 pub struct LocalNote {
     pub title: String,
     pub content: String,
@@ -22,7 +23,6 @@ pub struct LocalNote {
 }
 
 impl LocalNote {
-    /// Creates a new note file on disk with an H1 heading as its title.
     ///
     /// Ensures the content begins with a Markdown `# Title` heading,
     /// extracts the human‑readable title from that heading,
@@ -32,9 +32,9 @@ impl LocalNote {
     /// Returns a `LocalNote` with the parsed title, full content,
     /// and safe slugified path.
     /// Returns `NoteError` if the title is invalid or if writing fails.
-    pub fn create(title: String, content: String, path: &Path) -> Result<LocalNote, NoteError> {
+    pub fn create(title: &str, content: &str, path: &Path) -> Result<LocalNote, NoteError> {
         let full_content = if content.starts_with('#') {
-            content.clone()
+            content.to_string()
         } else {
             format!("# {}\n\n{}", title.trim(), content)
         };
@@ -74,10 +74,10 @@ impl LocalNote {
     /// `with_content` does not persist to disk; it only creates a variant of
     /// this `LocalNote` with `content` replaced. Useful for version history
     /// or sync engines.
-    pub fn with_content(&self, new_content: String) -> LocalNote {
+    pub fn with_content(&self, new_content: &str) -> LocalNote {
         LocalNote {
             title: self.title.clone(),
-            content: new_content,
+            content: new_content.to_string(),
             path: self.path.clone(),
         }
     }
@@ -91,7 +91,7 @@ impl LocalNote {
     ///
     /// If the content has no existing heading, a new one is inserted.
     /// Returns `NoteError` if the title cannot be processed.
-    pub fn with_title(&self, new_title: String) -> Result<LocalNote, NoteError> {
+    pub fn with_title(&self, new_title: &str) -> Result<LocalNote, NoteError> {
         let mut new_content = String::new();
         let mut lines = self.content.lines();
         lines.next(); // skip old first line
@@ -135,6 +135,18 @@ impl LocalNote {
         let path = &self.path;
         fs::remove_file(path).map_err(NoteError::FileError)?;
         Ok(())
+    }
+
+    pub fn open(path: &Path) -> Result<LocalNote, NoteError> {
+        let content = fs::read_to_string(path).map_err(NoteError::FileError)?;
+
+        let title = sanitize_title(&content);
+
+        Ok(LocalNote {
+            title,
+            content,
+            path: path.to_path_buf(),
+        })
     }
 }
 
