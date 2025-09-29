@@ -1,2 +1,2 @@
-pub mod local;
-pub mod notes;
+pub mod manager;
+pub mod storage;
