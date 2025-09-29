@@ -1,5 +1,6 @@
 use dirs;
 use std::fs;
+use std::intrinsics::assert_zero_valid;
 use std::io::{Error, ErrorKind, Result};
 use std::path::PathBuf;
 
@@ -60,7 +61,6 @@ impl Shelf {
             name: name.to_string(),
         })
     }
-
     /// Ensures a shelf exists, creating it if missing.
     ///
     /// If the shelf directory does not exist yet, it will be created.
@@ -73,6 +73,29 @@ impl Shelf {
         }
 
         Shelf::open(name)
+    }
+
+    pub fn rename(&mut self, new_name: &str) -> Result<()> {
+        let valid_new_name = Shelf::valid_shelf(new_name)?;
+
+        let new_path = Self::shelf_path(&valid_new_name)?;
+
+        if new_path.exists() {
+            return Err(Error::new(
+                ErrorKind::AlreadyExists,
+                format!("a(n) {new_name} shelf already exists."),
+            ));
+        }
+        fs::rename(&self.root, &new_path)?;
+
+        self.name = valid_new_name;
+        self.root = new_path;
+
+        Ok(())
+    }
+
+    pub fn delete_shelf(&self) -> Result<()> {
+        fs::remove_dir_all(&self.root)
     }
 
     /// Resolves a given shelf name into a full path under `~/Documents/shelves/{name}`.
