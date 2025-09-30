@@ -1,4 +1,4 @@
-use rough_core::shelf::local::Shelf;
+use rough_core::shelf::storage::Shelf;
 use std::fs;
 use uuid::Uuid;
 
