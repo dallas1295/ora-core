@@ -10,11 +10,15 @@ pub enum RoughError {
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    // TODO implement both sync and db modules
-    // #[error(transparent)]
-    // Sync(#[from] crate::sync::SyncError),
-    // #[error(transparent)]
-    // Database(#[from] crate::db::DbError),
+
+    #[error("Database error: {0}")]
+    Db(#[from] sqlx::Error),
+
+    #[error("Database connection failed: {0}")]
+    Connection(String),
+
+    #[error("Other error: {0}")]
+    Other(String),
 }
 
 pub type RoughResult<T> = Result<T, RoughError>;
