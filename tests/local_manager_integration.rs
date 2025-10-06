@@ -1,10 +1,10 @@
-use rough_core::error::RoughError;
-use rough_core::shelf::manager::ShelfManager;
-use rough_core::shelf::storage::Shelf;
+use ora_core::error::OraError;
+use ora_core::shelf::manager::ShelfManager;
+use ora_core::shelf::storage::Shelf;
 use tempfile::TempDir;
 
 #[test]
-fn create_and_list_notes() -> Result<(), RoughError> {
+fn create_and_list_notes() -> Result<(), OraError> {
     let tmpdir = TempDir::new()?;
     let shelf = Shelf {
         root: tmpdir.path().to_path_buf(),
@@ -29,7 +29,7 @@ fn create_and_list_notes() -> Result<(), RoughError> {
 }
 
 #[test]
-fn get_note_should_return_specific_note() -> Result<(), RoughError> {
+fn get_note_should_return_specific_note() -> Result<(), OraError> {
     let tmpdir = TempDir::new()?;
     let shelf = Shelf {
         root: tmpdir.path().to_path_buf(),
@@ -50,7 +50,7 @@ fn get_note_should_return_specific_note() -> Result<(), RoughError> {
 }
 
 #[test]
-fn update_note_should_change_content_and_title() -> Result<(), RoughError> {
+fn update_note_should_change_content_and_title() -> Result<(), OraError> {
     let tmpdir = TempDir::new()?;
     let shelf = Shelf {
         root: tmpdir.path().to_path_buf(),
@@ -71,7 +71,7 @@ fn update_note_should_change_content_and_title() -> Result<(), RoughError> {
 }
 
 #[test]
-fn delete_note_should_remove_file() -> Result<(), RoughError> {
+fn delete_note_should_remove_file() -> Result<(), OraError> {
     let tmpdir = TempDir::new()?;
     let shelf = Shelf {
         root: tmpdir.path().to_path_buf(),

@@ -1,4 +1,4 @@
-use crate::error::RoughError;
+use crate::error::OraError;
 use crate::search::index::{Index, IndexedNote};
 use sqlx::{Row, SqlitePool};
 use std::path::PathBuf;
@@ -41,7 +41,7 @@ impl Query {
         }
     }
 
-    pub async fn search(&self, query: &str) -> Result<Vec<SearchResult>, RoughError> {
+    pub async fn search(&self, query: &str) -> Result<Vec<SearchResult>, OraError> {
         self.search_with_options(query, &SearchOptions::default())
             .await
     }
@@ -50,7 +50,7 @@ impl Query {
         &self,
         query: &str,
         options: &SearchOptions,
-    ) -> Result<Vec<SearchResult>, RoughError> {
+    ) -> Result<Vec<SearchResult>, OraError> {
         let limit = options.limit.unwrap_or(50);
         let offset = options.offset.unwrap_or(0);
 
@@ -125,7 +125,7 @@ impl Query {
         Ok(results)
     }
 
-    pub async fn search_title(&self, query: &str) -> Result<Vec<SearchResult>, RoughError> {
+    pub async fn search_title(&self, query: &str) -> Result<Vec<SearchResult>, OraError> {
         self.search_title_with_options(query, &SearchOptions::default())
             .await
     }
@@ -134,13 +134,13 @@ impl Query {
         &self,
         query: &str,
         options: &SearchOptions,
-    ) -> Result<Vec<SearchResult>, RoughError> {
+    ) -> Result<Vec<SearchResult>, OraError> {
         // For title-only search, we use FTS5 with column-specific syntax
         let title_query = format!("title:{}", query);
         self.search_with_options(&title_query, options).await
     }
 
-    pub async fn search_content(&self, query: &str) -> Result<Vec<SearchResult>, RoughError> {
+    pub async fn search_content(&self, query: &str) -> Result<Vec<SearchResult>, OraError> {
         self.search_content_with_options(query, &SearchOptions::default())
             .await
     }
@@ -149,7 +149,7 @@ impl Query {
         &self,
         query: &str,
         options: &SearchOptions,
-    ) -> Result<Vec<SearchResult>, RoughError> {
+    ) -> Result<Vec<SearchResult>, OraError> {
         // For content-only search, we use FTS5 with column-specific syntax
         let content_query = format!("content:{}", query);
         self.search_with_options(&content_query, options).await
@@ -159,11 +159,11 @@ impl Query {
         &self,
         query: &str,
         options: &SearchOptions,
-    ) -> Result<Vec<SearchResult>, RoughError> {
+    ) -> Result<Vec<SearchResult>, OraError> {
         self.search_with_options(query, options).await
     }
 
-    pub async fn count_results(&self, query: &str) -> Result<u64, RoughError> {
+    pub async fn count_results(&self, query: &str) -> Result<u64, OraError> {
         let row = sqlx::query(
             r#"
             SELECT COUNT(*) as count
@@ -183,7 +183,7 @@ impl Query {
         &self,
         prefix: &str,
         limit: Option<u32>,
-    ) -> Result<Vec<String>, RoughError> {
+    ) -> Result<Vec<String>, OraError> {
         let limit = limit.unwrap_or(10);
 
         let rows = sqlx::query(

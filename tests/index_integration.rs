@@ -1,9 +1,9 @@
-use rough_core::domain::LocalNote;
-use rough_core::search::index::Index;
+use ora_core::domain::LocalNote;
+use ora_core::search::index::Index;
 use tempfile::TempDir;
 
 #[tokio::test]
-async fn create_index_and_index_note() -> Result<(), rough_core::error::RoughError> {
+async fn create_index_and_index_note() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -12,7 +12,7 @@ async fn create_index_and_index_note() -> Result<(), rough_core::error::RoughErr
 
     // Create a note
     let note = LocalNote::create("Test Note", "Hello world content", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     // Index the note
     index.index_note(&note).await?;
@@ -30,7 +30,7 @@ async fn create_index_and_index_note() -> Result<(), rough_core::error::RoughErr
 }
 
 #[tokio::test]
-async fn get_nonexistent_note_returns_none() -> Result<(), rough_core::error::RoughError> {
+async fn get_nonexistent_note_returns_none() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -46,7 +46,7 @@ async fn get_nonexistent_note_returns_none() -> Result<(), rough_core::error::Ro
 }
 
 #[tokio::test]
-async fn remove_note_should_delete_from_index() -> Result<(), rough_core::error::RoughError> {
+async fn remove_note_should_delete_from_index() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -54,7 +54,7 @@ async fn remove_note_should_delete_from_index() -> Result<(), rough_core::error:
 
     // Create and index a note
     let note = LocalNote::create("Delete Me", "Content to delete", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note).await?;
 
@@ -74,7 +74,7 @@ async fn remove_note_should_delete_from_index() -> Result<(), rough_core::error:
 }
 
 #[tokio::test]
-async fn remove_nonexistent_note_returns_false() -> Result<(), rough_core::error::RoughError> {
+async fn remove_nonexistent_note_returns_false() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -82,7 +82,7 @@ async fn remove_nonexistent_note_returns_false() -> Result<(), rough_core::error
 
     // Create a note but don't index it
     let note = LocalNote::create("Not Indexed", "Content", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     // Try to remove from index
     let was_removed = index.remove_note(&note).await?;
@@ -92,7 +92,7 @@ async fn remove_nonexistent_note_returns_false() -> Result<(), rough_core::error
 }
 
 #[tokio::test]
-async fn update_note_should_replace_in_index() -> Result<(), rough_core::error::RoughError> {
+async fn update_note_should_replace_in_index() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -100,7 +100,7 @@ async fn update_note_should_replace_in_index() -> Result<(), rough_core::error::
 
     // Create and index a note
     let note = LocalNote::create("Original Title", "Original content", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note).await?;
 

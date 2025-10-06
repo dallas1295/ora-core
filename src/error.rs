@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum RoughError {
+pub enum OraError {
     #[error(transparent)]
     Note(#[from] crate::domain::NoteError),
 
@@ -21,4 +21,4 @@ pub enum RoughError {
     Other(String),
 }
 
-pub type RoughResult<T> = Result<T, RoughError>;
+pub type OraResult<T> = Result<T, OraError>;

@@ -1,5 +1,5 @@
 use crate::domain::LocalNote;
-use crate::error::RoughError;
+use crate::error::OraError;
 use crate::shelf::storage::Shelf;
 use std::fs;
 
@@ -27,8 +27,8 @@ impl<'a> ShelfManager<'a> {
     /// Constructs the path `{shelf_root}/{slug}.md` and attempts to open it.
     ///
     /// # Errors
-    /// Returns [`RoughError`] if the note cannot be read or parsed.
-    pub fn get_note(&self, slug: &str) -> Result<LocalNote, RoughError> {
+    /// Returns [`OraError`] if the note cannot be read or parsed.
+    pub fn get_note(&self, slug: &str) -> Result<LocalNote, OraError> {
         let note_path = self.shelf.root.join(format!("{slug}.md"));
         Ok(LocalNote::open(&note_path)?)
     }
@@ -39,15 +39,15 @@ impl<'a> ShelfManager<'a> {
     /// [`LocalNote`], and returns them as a vector.
     ///
     /// # Errors
-    /// Returns [`RoughError`] if the directory or any note file cannot be read.
-    pub fn list_notes(&self) -> Result<Vec<LocalNote>, RoughError> {
+    /// Returns [`OraError`] if the directory or any note file cannot be read.
+    pub fn list_notes(&self) -> Result<Vec<LocalNote>, OraError> {
         let mut notes = Vec::new();
         for entry in fs::read_dir(&self.shelf.root)? {
             let entry = entry?;
             let path = entry.path();
 
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md") {
-                let note = LocalNote::open(&path)?; // auto NoteError -> RoughError
+                let note = LocalNote::open(&path)?; // auto NoteError -> OraError
                 notes.push(note);
             }
         }
@@ -60,8 +60,8 @@ impl<'a> ShelfManager<'a> {
     /// a unique filename under the shelf root.
     ///
     /// # Errors
-    /// Returns [`RoughError`] if the note cannot be created on disk.
-    pub fn create_note(&self, title: &str, content: &str) -> Result<LocalNote, RoughError> {
+    /// Returns [`OraError`] if the note cannot be created on disk.
+    pub fn create_note(&self, title: &str, content: &str) -> Result<LocalNote, OraError> {
         Ok(LocalNote::create(title, content, &self.shelf.root)?)
     }
 
@@ -70,8 +70,8 @@ impl<'a> ShelfManager<'a> {
     /// Constructs `{shelf_root}/{slug}.md`, then removes it from disk.
     ///
     /// # Errors
-    /// Returns [`RoughError`] if the filesystem operation fails.
-    pub fn delete_note(&self, slug: &str) -> Result<(), RoughError> {
+    /// Returns [`OraError`] if the filesystem operation fails.
+    pub fn delete_note(&self, slug: &str) -> Result<(), OraError> {
         let note_path = self.shelf.root.join(format!("{slug}.md"));
 
         let note_to_delete = LocalNote {
@@ -80,7 +80,7 @@ impl<'a> ShelfManager<'a> {
             path: note_path,
         };
 
-        note_to_delete.delete()?; // NoteError -> RoughError
+        note_to_delete.delete()?; // NoteError -> OraError
         Ok(())
     }
 
@@ -91,13 +91,13 @@ impl<'a> ShelfManager<'a> {
     /// - Saves the modified note to disk, replacing or renaming the old file as needed.  
     ///
     /// # Errors
-    /// Returns [`RoughError`] if reading, writing, or deleting underlying files fails.
+    /// Returns [`OraError`] if reading, writing, or deleting underlying files fails.
     pub fn update_note(
         &self,
         slug: &str,
         new_title: Option<&str>,
         new_content: Option<&str>,
-    ) -> Result<LocalNote, RoughError> {
+    ) -> Result<LocalNote, OraError> {
         let original_note = self.get_note(slug)?;
         let mut final_note = original_note.clone();
 
@@ -109,10 +109,10 @@ impl<'a> ShelfManager<'a> {
             final_note = final_note.with_content(content);
         }
 
-        final_note.save()?; // NoteError -> RoughError
+        final_note.save()?; // NoteError -> OraError
 
         if final_note.path != original_note.path {
-            fs::remove_file(&original_note.path)?; // io::Error -> RoughError
+            fs::remove_file(&original_note.path)?; // io::Error -> OraError
         }
 
         final_note.reload()?;

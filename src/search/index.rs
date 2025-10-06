@@ -1,5 +1,5 @@
 use crate::domain::LocalNote;
-use crate::error::RoughError;
+use crate::error::OraError;
 use sqlx::{Row, SqlitePool};
 use std::path::{Path, PathBuf};
 
@@ -15,7 +15,7 @@ pub struct IndexedNote {
 }
 
 impl Index {
-    pub async fn new(shelf_path: &Path) -> Result<Self, RoughError> {
+    pub async fn new(shelf_path: &Path) -> Result<Self, OraError> {
         let db_path = shelf_path.join(".shelf.db");
         let connection_path = format!("sqlite:{}?mode=rwc", db_path.display());
 
@@ -64,7 +64,7 @@ impl Index {
         Ok(Index { pool })
     }
 
-    pub async fn index_note(&self, note: &LocalNote) -> Result<(), RoughError> {
+    pub async fn index_note(&self, note: &LocalNote) -> Result<(), OraError> {
         sqlx::query(
             "INSERT OR REPLACE INTO notes (title,content, path, updated_at)
             VALUES (?,?,?, CURRENT_TIMESTAMP)",
@@ -78,7 +78,7 @@ impl Index {
         Ok(())
     }
 
-    pub async fn remove_note(&self, note: &LocalNote) -> Result<bool, RoughError> {
+    pub async fn remove_note(&self, note: &LocalNote) -> Result<bool, OraError> {
         let res = sqlx::query("DELETE FROM notes WHERE path = ?")
             .bind(note.path.display().to_string())
             .execute(&self.pool)
@@ -87,7 +87,7 @@ impl Index {
         Ok(res.rows_affected() > 0)
     }
 
-    pub async fn get_by_path(&self, path: &Path) -> Result<Option<IndexedNote>, RoughError> {
+    pub async fn get_by_path(&self, path: &Path) -> Result<Option<IndexedNote>, OraError> {
         let row = sqlx::query("SELECT title, content, path FROM notes WHERE path = ?")
             .bind(path.display().to_string())
             .fetch_optional(&self.pool)

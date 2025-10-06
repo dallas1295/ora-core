@@ -1,4 +1,4 @@
-use rough_core::domain::{LocalNote, NoteError};
+use ora_core::domain::{LocalNote, NoteError};
 use tempfile::TempDir;
 
 #[test]

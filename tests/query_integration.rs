@@ -1,10 +1,10 @@
-use rough_core::domain::LocalNote;
-use rough_core::search::index::Index;
-use rough_core::search::query::{Query, SearchOptions};
+use ora_core::domain::LocalNote;
+use ora_core::search::index::Index;
+use ora_core::search::query::{Query, SearchOptions};
 use tempfile::TempDir;
 
 #[tokio::test]
-async fn basic_search_returns_matching_notes() -> Result<(), rough_core::error::RoughError> {
+async fn basic_search_returns_matching_notes() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -17,15 +17,15 @@ async fn basic_search_returns_matching_notes() -> Result<(), rough_core::error::
         "Learn about Rust language features",
         shelf_path,
     )
-    .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+    .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note2 = LocalNote::create("Python Guide", "Python programming tutorial", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note3 = LocalNote::create(
         "JavaScript Tips",
         "Advanced JavaScript techniques",
         shelf_path,
     )
-    .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+    .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     // Index the notes
     index.index_note(&note1).await?;
@@ -46,7 +46,7 @@ async fn basic_search_returns_matching_notes() -> Result<(), rough_core::error::
 }
 
 #[tokio::test]
-async fn title_only_search() -> Result<(), rough_core::error::RoughError> {
+async fn title_only_search() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -59,9 +59,9 @@ async fn title_only_search() -> Result<(), rough_core::error::RoughError> {
         "This is a comprehensive guide to Rust",
         shelf_path,
     )
-    .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+    .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note2 = LocalNote::create("Python Guide", "Learn Python programming", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note1).await?;
     index.index_note(&note2).await?;
@@ -75,7 +75,7 @@ async fn title_only_search() -> Result<(), rough_core::error::RoughError> {
 }
 
 #[tokio::test]
-async fn content_only_search() -> Result<(), rough_core::error::RoughError> {
+async fn content_only_search() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -84,9 +84,9 @@ async fn content_only_search() -> Result<(), rough_core::error::RoughError> {
 
     // Create notes
     let note1 = LocalNote::create("Rust", "This is about comprehensive learning", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note2 = LocalNote::create("Python", "Python programming tutorial", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note1).await?;
     index.index_note(&note2).await?;
@@ -100,7 +100,7 @@ async fn content_only_search() -> Result<(), rough_core::error::RoughError> {
 }
 
 #[tokio::test]
-async fn search_with_pagination() -> Result<(), rough_core::error::RoughError> {
+async fn search_with_pagination() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -114,7 +114,7 @@ async fn search_with_pagination() -> Result<(), rough_core::error::RoughError> {
             &format!("Content for note number {}", i),
             shelf_path,
         )
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
         index.index_note(&note).await?;
     }
 
@@ -147,7 +147,7 @@ async fn search_with_pagination() -> Result<(), rough_core::error::RoughError> {
 }
 
 #[tokio::test]
-async fn search_with_snippets() -> Result<(), rough_core::error::RoughError> {
+async fn search_with_snippets() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -159,7 +159,7 @@ async fn search_with_snippets() -> Result<(), rough_core::error::RoughError> {
         "Rust is a systems programming language that runs blazingly fast",
         shelf_path,
     )
-    .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+    .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note).await?;
 
@@ -187,7 +187,7 @@ async fn search_with_snippets() -> Result<(), rough_core::error::RoughError> {
 }
 
 #[tokio::test]
-async fn count_search_results() -> Result<(), rough_core::error::RoughError> {
+async fn count_search_results() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -196,11 +196,11 @@ async fn count_search_results() -> Result<(), rough_core::error::RoughError> {
 
     // Create notes with "programming" in them
     let note1 = LocalNote::create("Rust Programming", "Learn Rust programming", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note2 = LocalNote::create("Python Programming", "Python programming guide", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note3 = LocalNote::create("JavaScript", "Web development", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note1).await?;
     index.index_note(&note2).await?;
@@ -219,7 +219,7 @@ async fn count_search_results() -> Result<(), rough_core::error::RoughError> {
 }
 
 #[tokio::test]
-async fn suggest_titles() -> Result<(), rough_core::error::RoughError> {
+async fn suggest_titles() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -228,11 +228,11 @@ async fn suggest_titles() -> Result<(), rough_core::error::RoughError> {
 
     // Create notes with similar titles
     let note1 = LocalNote::create("Rust Programming", "Learn Rust", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note2 = LocalNote::create("Rust Guide", "Rust tutorial", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note3 = LocalNote::create("Python Programming", "Learn Python", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note1).await?;
     index.index_note(&note2).await?;
@@ -251,7 +251,7 @@ async fn suggest_titles() -> Result<(), rough_core::error::RoughError> {
 }
 
 #[tokio::test]
-async fn advanced_fts5_queries() -> Result<(), rough_core::error::RoughError> {
+async fn advanced_fts5_queries() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -264,19 +264,19 @@ async fn advanced_fts5_queries() -> Result<(), rough_core::error::RoughError> {
         "Learn about Rust and memory safety",
         shelf_path,
     )
-    .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+    .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note2 = LocalNote::create(
         "Python Guide",
         "Python programming and data science",
         shelf_path,
     )
-    .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+    .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     let note3 = LocalNote::create(
         "Systems Programming",
         "Low-level programming in C and Rust",
         shelf_path,
     )
-    .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+    .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
 
     index.index_note(&note1).await?;
     index.index_note(&note2).await?;
@@ -299,7 +299,7 @@ async fn advanced_fts5_queries() -> Result<(), rough_core::error::RoughError> {
 }
 
 #[tokio::test]
-async fn empty_search_returns_no_results() -> Result<(), rough_core::error::RoughError> {
+async fn empty_search_returns_no_results() -> Result<(), ora_core::error::OraError> {
     let tmpdir = TempDir::new().unwrap();
     let shelf_path = tmpdir.path();
 
@@ -308,7 +308,7 @@ async fn empty_search_returns_no_results() -> Result<(), rough_core::error::Roug
 
     // Create a note
     let note = LocalNote::create("Test Note", "Some content", shelf_path)
-        .map_err(|e| rough_core::error::RoughError::Other(e.to_string()))?;
+        .map_err(|e| ora_core::error::OraError::Other(e.to_string()))?;
     index.index_note(&note).await?;
 
     // Search for non-existent term
