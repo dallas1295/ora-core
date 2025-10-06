@@ -4,9 +4,10 @@ use sqlx::{Row, SqlitePool};
 use std::path::{Path, PathBuf};
 
 pub struct Index {
-    pool: SqlitePool,
+    pub(crate) pool: SqlitePool,
 }
 
+#[derive(Debug, Clone)]
 pub struct IndexedNote {
     pub title: String,
     pub content: String,
