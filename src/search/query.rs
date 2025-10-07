@@ -101,7 +101,7 @@ impl Query {
             let content: String = row.get(1);
             let path_str: String = row.get(2);
             let rank: f64 = row.get(3);
-            
+
             let (title_snippet, content_snippet) = if options.include_snippets {
                 let title_snippet: Option<String> = row.get(4);
                 let content_snippet: Option<String> = row.get(5);
@@ -179,11 +179,7 @@ impl Query {
         Ok(count as u64)
     }
 
-    pub async fn suggest(
-        &self,
-        prefix: &str,
-        limit: Option<u32>,
-    ) -> Result<Vec<String>, OraError> {
+    pub async fn suggest(&self, prefix: &str, limit: Option<u32>) -> Result<Vec<String>, OraError> {
         let limit = limit.unwrap_or(10);
 
         let rows = sqlx::query(
@@ -200,11 +196,10 @@ impl Query {
         .fetch_all(&self.pool)
         .await?;
 
-        let mut suggestions = Vec::new();
-        for row in rows {
-            let title: String = row.get(0);
-            suggestions.push(title);
-        }
+        let suggestions = rows
+            .into_iter()
+            .map(|row| row.get::<String, _>(0))
+            .collect();
 
         Ok(suggestions)
     }
