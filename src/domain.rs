@@ -14,6 +14,10 @@ pub enum NoteError {
     #[error("invalid title")]
     InvalidTitle,
 
+    /// Returned when a note is saved, but there are no changes to it.
+    #[error("no changes to file")]
+    NoChanges,
+
     /// Wraps any underlying I/O error (read/write/rename/delete).
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
@@ -136,8 +140,16 @@ impl LocalNote {
     ///
     /// # Errors
     /// - [`NoteError::InvalidPath`] if the parent directory cannot be determined
+    /// - [`NoteError::NoChanges`] if there are no changes to the file
     /// - [`NoteError::Io`] if write or rename fails
     pub fn save(&self) -> Result<(), NoteError> {
+        if self.path.exists() {
+            if let Ok(existing_content) = fs::read_to_string(&self.path) {
+                if existing_content == self.content {
+                    return Err(NoteError::NoChanges);
+                }
+            }
+        }
         write_atomic(&self.path, self.content.as_bytes())
     }
 
