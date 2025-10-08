@@ -123,7 +123,16 @@ impl LocalNote {
         let title = sanitize_title(&new_content);
         let slug = slugify_title(&title);
         let base_dir = self.path.parent().ok_or(NoteError::InvalidPath)?;
-        let filename = is_unique(&slug, &base_dir);
+        let filename = if let Some(current_stem) = self.path.file_stem().and_then(|s| s.to_str()) {
+            if slug == current_stem {
+                self.path.clone()
+            } else {
+                is_unique(&slug, &base_dir)
+            }
+        } else {
+            // If the something happens that shouldn't we have this as a fallback.
+            is_unique(&slug, &base_dir)
+        };
         let new_path = base_dir.join(filename);
 
         Ok(LocalNote {
