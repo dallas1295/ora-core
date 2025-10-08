@@ -109,10 +109,11 @@ impl<'a> ShelfManager<'a> {
             final_note = final_note.with_content(content);
         }
 
-        final_note.save()?; // NoteError -> OraError
-
         if final_note.path != original_note.path {
-            fs::remove_file(&original_note.path)?; // io::Error -> OraError
+            final_note.save()?;
+            fs::remove_file(&original_note.path)?;
+        } else {
+            final_note.save()?;
         }
 
         final_note.reload()?;
