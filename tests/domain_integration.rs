@@ -9,7 +9,7 @@ fn create_and_reload_note() -> Result<(), NoteError> {
     let note = LocalNote::create("Test Note".into(), "Hello, world".into(), dir)?;
     assert!(note.path.exists());
 
-    assert!(note.content.starts_with("# Test Note"));
+    assert_eq!(note.content, "Hello, world");
 
     let reloaded = note.reload()?;
     assert!(reloaded.content.contains("Hello, world"));
@@ -46,9 +46,9 @@ fn update_title_and_persist_rename() -> Result<(), NoteError> {
 
     assert!(!note.path.exists());
     assert!(new_note.path.exists());
-    assert!(new_note.content.starts_with("# Renamed"));
+    assert_eq!(new_note.content, "data");
     assert_eq!(new_note.title, "Renamed");
-    assert!(new_note.path.ends_with("renamed.md"));
+    assert!(new_note.path.ends_with("Renamed.md"));
 
     Ok(())
 }
@@ -68,13 +68,13 @@ fn delete_removes_file() -> Result<(), NoteError> {
 }
 
 #[test]
-fn invalid_title_is_sanitized() -> Result<(), NoteError> {
+fn special_characters_in_title() -> Result<(), NoteError> {
     let tmpdir = TempDir::new().unwrap();
     let dir = tmpdir.path();
 
-    let bad = LocalNote::create("bad/title".into(), "oops".into(), dir)?;
-    assert_eq!(bad.title, "bad_title");
-    assert!(bad.path.ends_with("bad_title.md"));
+    let note = LocalNote::create("Note: Special Characters!".into(), "oops".into(), dir)?;
+    assert_eq!(note.title, "Note: Special Characters!");
+    assert!(note.path.ends_with("Note: Special Characters!.md"));
 
     Ok(())
 }
@@ -86,7 +86,27 @@ fn empty_title_defaults_to_untitled() -> Result<(), NoteError> {
 
     let untitled = LocalNote::create("    ".into(), "empty".into(), dir)?;
     assert_eq!(untitled.title, "Untitled");
-    assert!(untitled.path.ends_with("untitled.md"));
+    assert!(untitled.path.ends_with("Untitled.md"));
+
+    Ok(())
+}
+
+#[test]
+fn duplicate_titles_get_number_suffix() -> Result<(), NoteError> {
+    let tmpdir = TempDir::new().unwrap();
+    let dir = tmpdir.path();
+
+    let note1 = LocalNote::create("Same Title".into(), "first".into(), dir)?;
+    assert_eq!(note1.title, "Same Title");
+    assert!(note1.path.ends_with("Same Title.md"));
+
+    let note2 = LocalNote::create("Same Title".into(), "second".into(), dir)?;
+    assert_eq!(note2.title, "Same Title");
+    assert!(note2.path.ends_with("Same Title 1.md"));
+
+    let note3 = LocalNote::create("Same Title".into(), "third".into(), dir)?;
+    assert_eq!(note3.title, "Same Title");
+    assert!(note3.path.ends_with("Same Title 2.md"));
 
     Ok(())
 }

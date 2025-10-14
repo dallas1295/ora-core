@@ -33,9 +33,6 @@ impl From<crate::domain::NoteError> for OraError {
             crate::domain::NoteError::InvalidPath => {
                 OraError::Note(crate::domain::NoteError::InvalidPath)
             }
-            crate::domain::NoteError::InvalidTitle => {
-                OraError::Note(crate::domain::NoteError::InvalidTitle)
-            }
             crate::domain::NoteError::Io(io_error) => {
                 OraError::Note(crate::domain::NoteError::Io(io_error))
             }

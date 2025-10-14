@@ -10,10 +10,6 @@ pub enum NoteError {
     #[error("invalid path")]
     InvalidPath,
 
-    /// Returned when a note title is empty or contains forbidden characters.
-    #[error("invalid title")]
-    InvalidTitle,
-
     /// Returned when a note is saved, but there are no changes to it.
     #[error("no changes to file")]
     NoChanges,
@@ -32,35 +28,33 @@ pub struct LocalNote {
 }
 
 impl LocalNote {
-    /// Ensures the content begins with a Markdown `# Title` heading,
-    /// extracts the human‑readable title from that heading,
-    /// derives a slugified filename from the title,
-    /// and writes the note to disk at the given path.
+    /// Creates a new note with the given title and content.
+    /// Uses the title as the filename (with .md extension) and writes
+    /// the content exactly as provided to disk.
     ///
-    /// Returns a `LocalNote` with the parsed title, full content,
-    /// and safe slugified path.
+    /// Empty titles are replaced with "Untitled". If a file with the same
+    /// name exists, a number suffix is added (e.g., "My Note 1.md").
+    ///
+    /// Returns a `LocalNote` with the title, content, and file path.
     ///
     /// # Errors
     /// - [`NoteError::InvalidPath`] if the target path cannot be determined
-    /// - [`NoteError::InvalidTitle`] if the title is empty or invalid
     /// - [`NoteError::Io`] if the file cannot be written
     pub fn create(title: &str, content: &str, path: &Path) -> Result<LocalNote, NoteError> {
-        let full_content = if content.starts_with('#') {
-            content.to_string()
+        let note_title = if title.trim().is_empty() {
+            "Untitled".to_string()
         } else {
-            format!("# {}\n\n{}", title.trim(), content)
+            title.trim().to_string()
         };
 
-        let note_title = sanitize_title(&full_content);
-        let slug = slugify_title(&note_title);
-        let filename = is_unique(&slug, &path);
+        let filename = create_unique_filename(&note_title, &path);
         let note_path = path.join(filename);
 
-        fs::write(&note_path, &full_content)?;
+        fs::write(&note_path, content)?;
 
         Ok(LocalNote {
             title: note_title,
-            content: full_content,
+            content: content.to_string(),
             path: note_path,
         })
     }
@@ -70,13 +64,13 @@ impl LocalNote {
     /// Useful when the file might have been modified externally (e.g. in Vim, Obsidian, etc.).
     ///
     /// Does **not** mutate `self`; instead returns a refreshed instance holding
-    /// the current file contents.
+    /// the current file contents. The title is extracted from the filename.
     ///
     /// # Errors
     /// - [`NoteError::Io`] if the file cannot be read
     pub fn reload(&self) -> Result<LocalNote, NoteError> {
         let data = fs::read_to_string(&self.path)?;
-        let note_title = sanitize_title(&data);
+        let note_title = extract_title_from_path(&self.path);
 
         Ok(LocalNote {
             title: note_title,
@@ -98,46 +92,37 @@ impl LocalNote {
         }
     }
 
-    /// Returns a new `LocalNote` with its title updated,
-    /// including replacing the first H1 heading in the content
-    /// and updating the slugified file path.
+    /// Returns a new `LocalNote` with its title updated.
     ///
-    /// Creates a fresh copy of the note in memory; the filesystem
-    /// is not modified until [`persist_rename`] is called.
-    ///
-    /// If the content has no existing heading, a new one is inserted.
+    /// Creates a fresh copy of the note in memory with the new title
+    /// and updated file path. The content is not modified.
+    /// Empty titles are replaced with "Untitled".
+    /// The filesystem is not modified until [`persist_rename`] is called.
     ///
     /// # Errors
     /// - [`NoteError::InvalidPath`] if the parent directory cannot be determined
-    /// - [`NoteError::InvalidTitle`] if the new title is invalid
     pub fn with_title(&self, new_title: &str) -> Result<LocalNote, NoteError> {
-        let mut new_content = String::new();
-        let mut lines = self.content.lines();
-        lines.next(); // skip old first line
-        new_content.push_str(&format!("# {}", new_title));
-        for line in lines {
-            new_content.push('\n');
-            new_content.push_str(line);
-        }
+        let title = if new_title.trim().is_empty() {
+            "Untitled".to_string()
+        } else {
+            new_title.trim().to_string()
+        };
 
-        let title = sanitize_title(&new_content);
-        let slug = slugify_title(&title);
         let base_dir = self.path.parent().ok_or(NoteError::InvalidPath)?;
         let filename = if let Some(current_stem) = self.path.file_stem().and_then(|s| s.to_str()) {
-            if slug == current_stem {
+            if title == current_stem {
                 self.path.clone()
             } else {
-                is_unique(&slug, &base_dir)
+                create_unique_filename(&title, &base_dir)
             }
         } else {
-            // If the something happens that shouldn't we have this as a fallback.
-            is_unique(&slug, &base_dir)
+            create_unique_filename(&title, &base_dir)
         };
         let new_path = base_dir.join(filename);
 
         Ok(LocalNote {
-            title: title,
-            content: new_content,
+            title,
+            content: self.content.clone(),
             path: new_path,
         })
     }
@@ -185,14 +170,14 @@ impl LocalNote {
 
     /// Opens an existing note from disk at the given `path`.
     ///
-    /// Reads the file contents into memory, extracts and sanitizes the title
-    /// from the first Markdown heading, and returns a new `LocalNote`.
+    /// Reads the file contents into memory and extracts the title
+    /// from the filename (without .md extension), returning a new `LocalNote`.
     ///
     /// # Errors
     /// - [`NoteError::Io`] if reading fails
     pub fn open(path: &Path) -> Result<LocalNote, NoteError> {
         let content = fs::read_to_string(path)?;
-        let title = sanitize_title(&content);
+        let title = extract_title_from_path(path);
 
         Ok(LocalNote {
             title,
@@ -202,17 +187,17 @@ impl LocalNote {
     }
 }
 
-/// Checks for a unique Markdown filename in `dir` based on `base` slug.
+/// Checks for a unique Markdown filename in `dir` based on the title.
 ///
-/// If `base.md` exists, tries `base_1.md`, `base_2.md`, ... until a free
+/// If `title.md` exists, tries `title 1.md`, `title 2.md`, ... until a free
 /// path is found. Returns the first non‑existing candidate `PathBuf`.
-fn is_unique(base: &str, dir: &Path) -> PathBuf {
+fn create_unique_filename(title: &str, dir: &Path) -> PathBuf {
     let mut count = 0;
     loop {
         let candidate = if count == 0 {
-            dir.join(format!("{}.md", base))
+            dir.join(format!("{}.md", title))
         } else {
-            dir.join(format!("{}_{}.md", base, count))
+            dir.join(format!("{} {}.md", title, count))
         };
 
         if !candidate.exists() {
@@ -220,6 +205,18 @@ fn is_unique(base: &str, dir: &Path) -> PathBuf {
         }
         count += 1;
     }
+}
+
+/// Extracts the title from a file path by removing the .md extension.
+///
+/// If the filename is empty or doesn't have a .md extension, returns "Untitled".
+fn extract_title_from_path(path: &Path) -> String {
+    path.file_stem()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or("Untitled")
+        .trim()
+        .to_string()
 }
 
 /// Internal helper to atomically write note content to disk.
@@ -236,65 +233,4 @@ fn write_atomic(path: &Path, data: &[u8]) -> Result<(), NoteError> {
     tmp.write_all(data)?;
     tmp.persist(path).map_err(|e| NoteError::Io(e.error))?;
     Ok(())
-}
-
-/// Converts a human‑readable title into a filesystem‑safe slug.
-///
-/// - Lowercases all characters
-/// - Replaces whitespace and hyphens with `_`
-/// - Drops unsafe characters
-/// - Trims surrounding underscores
-///
-/// Example: `"Meeting Notes!"` → `"meeting_notes"`
-fn slugify_title(title: &str) -> String {
-    let slug: String = title
-        .to_lowercase()
-        .chars()
-        .map(|c| {
-            if c.is_alphanumeric() {
-                c
-            } else if c.is_whitespace() || c == '-' {
-                '_'
-            } else if c == '_' {
-                c
-            } else {
-                '\0'
-            }
-        })
-        .filter(|&c| c != '\0')
-        .collect();
-
-    slug.trim_matches('_').to_owned()
-}
-
-/// Extracts a human‑readable title from the first line of note content.
-///
-/// Looks for a Markdown H1 heading (`# Title`) on the first line,
-/// strips the `#` marker and leading/trailing whitespace, and returns
-/// the cleaned title string.
-///
-/// If the first line is missing or empty, returns `"Untitled"`.
-fn sanitize_title(content: &str) -> String {
-    let first_line = content.lines().next();
-
-    match first_line {
-        Some(line) => {
-            let forbidden = ['/', '\\', ':', '"', '*', '?', '<', '>', '|'];
-            let title: String = line
-                .chars()
-                .skip_while(|&c| c == '#')
-                .skip_while(|&c| c.is_whitespace())
-                .map(|c| if forbidden.contains(&c) { '_' } else { c })
-                .collect::<String>()
-                .trim_end()
-                .to_string();
-
-            if title.is_empty() {
-                "Untitled".to_string()
-            } else {
-                title
-            }
-        }
-        None => "Untitled".to_string(),
-    }
 }

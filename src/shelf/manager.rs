@@ -22,14 +22,15 @@ impl<'a> ShelfManager<'a> {
         &self.shelf.name
     }
 
-    /// Retrieves a note by its slug (filename without `.md`).
+    /// Retrieves a note by its title (filename without `.md`).
     ///
-    /// Constructs the path `{shelf_root}/{slug}.md` and attempts to open it.
+    /// Constructs the path `{shelf_root}/{title}.md` and attempts to open it.
+    /// The note's title is extracted from the filename.
     ///
     /// # Errors
     /// Returns [`OraError`] if the note cannot be read or parsed.
-    pub fn get_note(&self, slug: &str) -> Result<LocalNote, OraError> {
-        let note_path = self.shelf.root.join(format!("{slug}.md"));
+    pub fn get_note(&self, title: &str) -> Result<LocalNote, OraError> {
+        let note_path = self.shelf.root.join(format!("{title}.md"));
         Ok(LocalNote::open(&note_path)?)
     }
 
@@ -56,8 +57,9 @@ impl<'a> ShelfManager<'a> {
 
     /// Creates a new note inside the shelf.
     ///
-    /// Uses the given `title` and `content`. Slugifies the title and chooses
-    /// a unique filename under the shelf root.
+    /// Uses the given `title` and `content`. The title is used as the filename
+    /// (with .md extension) and empty titles become "Untitled". If a file with
+    /// the same name exists, a number suffix is added.
     ///
     /// # Errors
     /// Returns [`OraError`] if the note cannot be created on disk.
@@ -65,14 +67,14 @@ impl<'a> ShelfManager<'a> {
         Ok(LocalNote::create(title, content, &self.shelf.root)?)
     }
 
-    /// Deletes a note in the shelf by slug.
+    /// Deletes a note in the shelf by title.
     ///
-    /// Constructs `{shelf_root}/{slug}.md`, then removes it from disk.
+    /// Constructs `{shelf_root}/{title}.md`, then removes it from disk.
     ///
     /// # Errors
     /// Returns [`OraError`] if the filesystem operation fails.
-    pub fn delete_note(&self, slug: &str) -> Result<(), OraError> {
-        let note_path = self.shelf.root.join(format!("{slug}.md"));
+    pub fn delete_note(&self, title: &str) -> Result<(), OraError> {
+        let note_path = self.shelf.root.join(format!("{title}.md"));
 
         let note_to_delete = LocalNote {
             title: String::new(),
@@ -87,22 +89,22 @@ impl<'a> ShelfManager<'a> {
     /// Updates an existing note in the shelf.
     ///
     /// - If `new_content` is set, replaces the note's content.  
-    /// - If `new_title` is set, updates the first‑line heading and slugified filename.  
+    /// - If `new_title` is set, updates the filename and title field.  
     /// - Saves the modified note to disk, replacing or renaming the old file as needed.  
     ///
     /// # Errors
     /// Returns [`OraError`] if reading, writing, or deleting underlying files fails.
     pub fn update_note(
         &self,
-        slug: &str,
+        title: &str,
         new_title: Option<&str>,
         new_content: Option<&str>,
     ) -> Result<LocalNote, OraError> {
-        let original_note = self.get_note(slug)?;
+        let original_note = self.get_note(title)?;
         let mut final_note = original_note.clone();
 
-        if let Some(title) = new_title {
-            final_note = final_note.with_title(title)?;
+        if let Some(new_title) = new_title {
+            final_note = final_note.with_title(new_title)?;
         };
 
         if let Some(content) = new_content {

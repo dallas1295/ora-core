@@ -39,10 +39,10 @@ fn get_note_should_return_specific_note() -> Result<(), OraError> {
     let manager = ShelfManager::new(&shelf);
     let note = manager.create_note("Special", "important data")?;
 
-    // slug comes from title
-    let slug = note.path.file_stem().unwrap().to_string_lossy().to_string();
+    // title comes from filename
+    let title = note.path.file_stem().unwrap().to_string_lossy().to_string();
 
-    let fetched = manager.get_note(&slug)?;
+    let fetched = manager.get_note(&title)?;
     assert_eq!(fetched.title, "Special");
     assert!(fetched.content.contains("important data"));
 
@@ -60,10 +60,10 @@ fn update_note_should_change_content_and_title() -> Result<(), OraError> {
     let manager = ShelfManager::new(&shelf);
     let note = manager.create_note("UpdateMe", "old text")?;
 
-    let slug = note.path.file_stem().unwrap().to_string_lossy().to_string();
+    let title = note.path.file_stem().unwrap().to_string_lossy().to_string();
 
     // update both content and title
-    let updated = manager.update_note(&slug, Some("UpdatedTitle"), Some("new text"))?;
+    let updated = manager.update_note(&title, Some("UpdatedTitle"), Some("new text"))?;
     assert_eq!(updated.title, "UpdatedTitle");
     assert!(updated.content.contains("new text"));
 
@@ -81,9 +81,9 @@ fn delete_note_should_remove_file() -> Result<(), OraError> {
     let manager = ShelfManager::new(&shelf);
     let note = manager.create_note("DeleteMe", "bye!")?;
 
-    let slug = note.path.file_stem().unwrap().to_string_lossy().to_string();
+    let title = note.path.file_stem().unwrap().to_string_lossy().to_string();
 
-    manager.delete_note(&slug)?;
+    manager.delete_note(&title)?;
 
     assert!(!note.path.exists());
 
