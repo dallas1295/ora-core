@@ -35,20 +35,20 @@ fn update_content_and_save() -> Result<(), NoteError> {
 }
 
 #[test]
-fn update_title_and_persist_rename() -> Result<(), NoteError> {
+fn save_as_renames_note() -> Result<(), NoteError> {
     let tmpdir = TempDir::new().unwrap();
     let dir = tmpdir.path();
 
-    let note = LocalNote::create("Title Note".into(), "data".into(), dir)?;
+    let mut note = LocalNote::create("Title Note".into(), "data".into(), dir)?;
+    let old_path = note.path.clone();
 
-    let new_note = note.with_title("Renamed".into())?;
-    new_note.persist_rename(&note.path)?;
+    note.save_as("Renamed")?;
 
-    assert!(!note.path.exists());
-    assert!(new_note.path.exists());
-    assert_eq!(new_note.content, "data");
-    assert_eq!(new_note.title, "Renamed");
-    assert!(new_note.path.ends_with("Renamed.md"));
+    assert!(!old_path.exists());
+    assert!(note.path.exists());
+    assert_eq!(note.content, "data");
+    assert_eq!(note.title, "Renamed");
+    assert!(note.path.ends_with("Renamed.md"));
 
     Ok(())
 }
