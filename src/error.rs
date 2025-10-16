@@ -17,7 +17,7 @@ pub enum OraError {
     Io(#[from] std::io::Error),
 
     #[error("Database error: {0}")]
-    Db(#[from] sqlx::Error),
+    Db(#[from] rusqlite::Error),
 
     #[error("Database connection failed: {0}")]
     Connection(String),
