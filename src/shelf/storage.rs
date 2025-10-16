@@ -152,7 +152,7 @@ impl Shelf {
     ///
     /// # Errors
     /// - [`ShelfError::NotFound`] if the user's documents directory cannot be determined
-    fn shelf_path(name: Option<&str>) -> Result<PathBuf, ShelfError> {
+    pub fn shelf_path(name: Option<&str>) -> Result<PathBuf, ShelfError> {
         let docs = dirs::document_dir()
             .ok_or_else(|| ShelfError::NotFound("documents directory".into()))?;
 

@@ -92,39 +92,54 @@ impl LocalNote {
         }
     }
 
-    /// Returns a new `LocalNote` with its title updated.
+    /// Saves the note with a new title, handling both title change and content changes atomically.
     ///
-    /// Creates a fresh copy of the note in memory with the new title
-    /// and updated file path. The content is not modified.
-    /// Empty titles are replaced with "Untitled".
-    /// The filesystem is not modified until [`persist_rename`] is called.
+    /// This method will:
+    /// 1. Create a new filename based on the title
+    /// 2. Atomically write the current content to the new path
+    /// 3. Remove the old file if the path changed
+    /// 4. Update the note's title and path in memory
+    ///
+    /// Empty titles are replaced with "Untitled". If a file with the same
+    /// name exists, a number suffix is added (e.g., "My Note 1.md").
     ///
     /// # Errors
     /// - [`NoteError::InvalidPath`] if the parent directory cannot be determined
-    pub fn with_title(&self, new_title: &str) -> Result<LocalNote, NoteError> {
-        let title = if new_title.trim().is_empty() {
+    /// - [`NoteError::NoChanges`] if there are no changes to the file
+    /// - [`NoteError::Io`] if write or rename fails
+    pub fn save_as(&mut self, title: &str) -> Result<(), NoteError> {
+        let new_title = if title.trim().is_empty() {
             "Untitled".to_string()
         } else {
-            new_title.trim().to_string()
+            title.trim().to_string()
         };
+
+        if new_title == self.title {
+            return self.save();
+        }
 
         let base_dir = self.path.parent().ok_or(NoteError::InvalidPath)?;
-        let filename = if let Some(current_stem) = self.path.file_stem().and_then(|s| s.to_str()) {
-            if title == current_stem {
-                self.path.clone()
-            } else {
-                create_unique_filename(&title, &base_dir)
-            }
-        } else {
-            create_unique_filename(&title, &base_dir)
-        };
-        let new_path = base_dir.join(filename);
+        let new_filename = create_unique_filename(&new_title, base_dir);
+        let new_path = base_dir.join(new_filename);
 
-        Ok(LocalNote {
-            title,
-            content: self.content.clone(),
-            path: new_path,
-        })
+        if self.path.exists() {
+            if let Ok(existing_content) = fs::read_to_string(&self.path) {
+                if existing_content == self.content && new_path == self.path {
+                    return Err(NoteError::NoChanges);
+                }
+            }
+        }
+
+        write_atomic(&new_path, self.content.as_bytes())?;
+
+        if new_path != self.path {
+            fs::remove_file(&self.path)?;
+        }
+
+        self.title = new_title;
+        self.path = new_path;
+
+        Ok(())
     }
 
     /// Saves the current note to disk at `self.path`.
@@ -147,17 +162,7 @@ impl LocalNote {
         write_atomic(&self.path, self.content.as_bytes())
     }
 
-    /// Persists a rename on disk from an old path.
-    ///
-    /// Typically used after [`with_title`] to commit the updated `path`
-    /// of a note by renaming the old file.
-    ///
-    /// # Errors
-    /// - [`NoteError::Io`] if the rename fails
-    pub fn persist_rename(&self, old_path: &Path) -> Result<(), NoteError> {
-        fs::rename(old_path, &self.path)?;
-        Ok(())
-    }
+
 
     /// Deletes this note from disk.
     ///

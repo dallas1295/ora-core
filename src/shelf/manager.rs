@@ -48,7 +48,7 @@ impl<'a> ShelfManager<'a> {
             let path = entry.path();
 
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md") {
-                let note = LocalNote::open(&path)?; // auto NoteError -> OraError
+                let note = LocalNote::open(&path)?;
                 notes.push(note);
             }
         }
@@ -82,7 +82,7 @@ impl<'a> ShelfManager<'a> {
             path: note_path,
         };
 
-        note_to_delete.delete()?; // NoteError -> OraError
+        note_to_delete.delete()?;
         Ok(())
     }
 
@@ -100,20 +100,14 @@ impl<'a> ShelfManager<'a> {
         new_title: Option<&str>,
         new_content: Option<&str>,
     ) -> Result<LocalNote, OraError> {
-        let original_note = self.get_note(title)?;
-        let mut final_note = original_note.clone();
-
-        if let Some(new_title) = new_title {
-            final_note = final_note.with_title(new_title)?;
-        };
+        let mut final_note = self.get_note(title)?;
 
         if let Some(content) = new_content {
             final_note = final_note.with_content(content);
         }
 
-        if final_note.path != original_note.path {
-            final_note.save()?;
-            fs::remove_file(&original_note.path)?;
+        if let Some(new_title) = new_title {
+            final_note.save_as(new_title)?;
         } else {
             final_note.save()?;
         }
