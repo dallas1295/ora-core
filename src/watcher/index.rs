@@ -4,6 +4,7 @@ use rusqlite::{Connection, params};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
+#[derive(Clone)]
 pub struct Index {
     pub conn: Arc<Mutex<Connection>>,
 }
