@@ -24,6 +24,9 @@ pub enum OraError {
 
     #[error("Other error: {0}")]
     Other(String),
+
+    #[error(transparent)]
+    Watcher(#[from] notify::Error),
 }
 
 impl From<crate::domain::NoteError> for OraError {
