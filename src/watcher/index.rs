@@ -1,6 +1,7 @@
 use crate::domain::LocalNote;
 use crate::error::OraError;
 use rusqlite::{Connection, params};
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -60,9 +61,34 @@ impl Index {
             [],
         )?;
 
-        Ok(Index {
+        let index = Index {
             conn: Arc::new(Mutex::new(conn)),
-        })
+        };
+
+        index.index_existing_files(shelf_path)?;
+
+        return Ok(index);
+    }
+
+    pub fn index_existing_files(&self, shelf_path: &Path) -> Result<(), OraError> {
+        for entry in fs::read_dir(shelf_path)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                self.index_existing_files(&path)?;
+            } else if let Some(ext) = path.extension() {
+                if ext == "md" && !path.file_name().unwrap().to_str().unwrap().starts_with('.') {
+                    // Check if file is already indexed to avoid duplicates
+                    if !self.exists(&path)? {
+                        if let Ok(note) = LocalNote::open(&path) {
+                            self.index_note(&note)?;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn index_note(&self, note: &LocalNote) -> Result<(), OraError> {
@@ -82,6 +108,13 @@ impl Index {
             params![note.path.display().to_string()],
         )?;
         Ok(rows_affected > 0)
+    }
+
+    pub fn exists(&self, path: &Path) -> Result<bool, OraError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT COUNT(*) FROM notes WHERE path = ?")?;
+        let count: i64 = stmt.query_row(params![path.display().to_string()], |row| row.get(0))?;
+        Ok(count > 0)
     }
 
     pub fn get_by_path(&self, path: &Path) -> Result<Option<IndexedNote>, OraError> {
