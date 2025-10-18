@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use notify::EventKind;
+use notify::{EventKind, RecommendedWatcher};
 
 use crate::{
     error::OraError,
@@ -19,6 +19,7 @@ pub struct WatcherService {
     shutdown_tx: Option<Sender<()>>,
     duration: Duration,
     watch_path: PathBuf,
+    watcher: Option<RecommendedWatcher>,
 }
 
 impl WatcherService {
@@ -34,6 +35,7 @@ impl WatcherService {
             shutdown_tx: None,
             duration: debounce_duration,
             watch_path: shelf_path.to_path_buf(),
+            watcher: None,
         })
     }
 
@@ -41,7 +43,8 @@ impl WatcherService {
         let (raw_tx, raw_rx) = channel::<(EventKind, PathBuf)>();
         let (debounced_tx, debounced_rx) = channel::<(EventKind, PathBuf)>();
 
-        let _watcher = setup_file_watcher(&self.watch_path, raw_tx)?;
+        let watcher = setup_file_watcher(&self.watch_path, raw_tx)?;
+        self.watcher = Some(watcher);
 
         let mut debouncer = Debouncer::new(debounced_tx, self.duration);
 
