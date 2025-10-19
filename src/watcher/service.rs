@@ -84,10 +84,9 @@ impl WatcherService {
     }
 
     pub fn shutdown(&mut self) -> Result<(), OraError> {
-        // NOTE: drops the sender to close the channels
+        self.watcher.take();
         self.shutdown_tx.take();
 
-        // NOTE: Joins threads to stop everything.
         if let Some(handle) = self.debouncer_thread.take() {
             let _ = handle.join();
         }
@@ -97,5 +96,13 @@ impl WatcherService {
         }
 
         Ok(())
+    }
+
+    // This method is ONLY available when running `cargo test --features test-methods`.
+    // It's useful for accessing the same Index instance that the watcher is using
+    // to avoid double indexing issues in tests.
+    #[cfg(feature = "test-methods")]
+    pub fn get_index(&self) -> index::Index {
+        self.handler.get_index()
     }
 }
