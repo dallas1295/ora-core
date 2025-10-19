@@ -1,28 +1,59 @@
+//! Shelf storage and management functionality.
+//!
+//! This module provides the core storage abstraction for organizing notes
+//! in shelf-based directories. Shelves are stored under `~/Documents/shelves/`
+//! and provide a clean way to separate different note collections.
+//!
+//! # Shelf Structure
+//!
+//! Each shelf is a directory containing:
+//! - Markdown notes (`.md` files)
+//! - Optional subdirectories for organization
+//! - A hidden SQLite database (`.shelf.db`) for search indexing
+//!
+//! # Error Handling
+//!
+//! All shelf operations return [`ShelfError`] which provides specific
+//! error types for different failure conditions.
+
 use dirs;
 use std::fs;
 use std::path::PathBuf;
 use thiserror::Error;
 
+/// Errors that can occur during shelf operations.
 #[derive(Debug, Error)]
 pub enum ShelfError {
+    /// The requested shelf could not be found.
     #[error("shelf not found: {0}")]
     NotFound(String),
 
+    /// A shelf with the given name already exists.
     #[error("shelf already exists: {0}")]
     AlreadyExists(String),
 
+    /// The provided shelf name is invalid.
     #[error("invalid shelf name")]
     InvalidInput,
 
+    /// Permission denied when accessing shelf directory.
     #[error("permission denied")]
     PermissionDenied,
 
+    /// I/O errors from file system operations.
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 }
 
+/// A shelf represents a collection of notes stored in a dedicated directory.
+///
+/// Shelves provide organization and isolation for different note collections.
+/// Each shelf has a name and a root directory path where notes are stored.
 pub struct Shelf {
+    /// The absolute path to the shelf directory on disk.
     pub root: PathBuf,
+    
+    /// The human-readable name of the shelf.
     pub name: String,
 }
 
