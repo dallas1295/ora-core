@@ -5,6 +5,7 @@ use std::path::Path;
 
 fn is_markdown_file(path: &Path) -> bool {
     path.extension().and_then(|s| s.to_str()) == Some("md")
+        && !path.file_name().unwrap().to_str().unwrap().starts_with('.')
 }
 
 #[derive(Clone)]
@@ -29,7 +30,6 @@ impl FileIndexHandler {
         match LocalNote::open(path) {
             Ok(note) => {
                 self.index.index_note(&note)?;
-                println!("Indexed new note: {}", note.title);
             }
             Err(e) => {
                 eprintln!("Failed to open note for indexing: {:?}, error: {}", path, e)
@@ -44,13 +44,7 @@ impl FileIndexHandler {
         }
         match LocalNote::open(path) {
             Ok(note) => {
-                if !self.index.exists(path)? {
-                    self.index.index_note(&note)?;
-                    println!("Indexed new note via modify: {}", note.title);
-                } else {
-                    self.index.index_note(&note)?;
-                    println!("Updated indexed note: {}", note.title);
-                }
+                self.index.index_note(&note)?;
             }
             Err(_) => {
                 let deleted_note = LocalNote {
@@ -58,10 +52,7 @@ impl FileIndexHandler {
                     content: String::new(),
                     path: path.to_path_buf(),
                 };
-                let was_removed = self.index.remove_note(&deleted_note)?;
-                if was_removed {
-                    println!("Removed missing note: {:?}", path);
-                }
+                self.index.remove_note(&deleted_note)?;
             }
         }
         Ok(())
@@ -78,10 +69,14 @@ impl FileIndexHandler {
             path: path.to_path_buf(),
         };
 
-        let was_removed = self.index.remove_note(&deleted_note)?;
-        if was_removed {
-            println!("Removed indexed note: {:?}", path);
-        }
+        self.index.remove_note(&deleted_note)?;
         Ok(())
+    }
+
+    // This method is ONLY available when running `cargo test --features test-methods`.
+    // It's useful for accessing the Index instance from the watcher service.
+    #[cfg(feature = "test-methods")]
+    pub fn get_index(&self) -> Index {
+        self.index.clone()
     }
 }
