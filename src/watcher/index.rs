@@ -60,10 +60,10 @@ pub struct Index {
 pub struct IndexedNote {
     /// The title of the note (extracted from filename).
     pub title: String,
-    
+
     /// The full content of the note.
     pub content: String,
-    
+
     /// The file path where the note is stored.
     pub path: PathBuf,
 }

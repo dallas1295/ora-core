@@ -52,7 +52,7 @@ pub enum ShelfError {
 pub struct Shelf {
     /// The absolute path to the shelf directory on disk.
     pub root: PathBuf,
-    
+
     /// The human-readable name of the shelf.
     pub name: String,
 }

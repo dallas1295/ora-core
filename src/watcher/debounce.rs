@@ -36,10 +36,10 @@ use std::{collections::HashMap, path::PathBuf, sync::mpsc, thread, time::Duratio
 pub struct Debouncer {
     /// Map of file paths to their timer cancellation channels.
     active_timers: HashMap<PathBuf, mpsc::Sender<()>>,
-    
+
     /// Channel for sending debounced events to the handler.
     output_tx: mpsc::Sender<(EventKind, PathBuf)>,
-    
+
     /// Duration to wait before forwarding events.
     duration: Duration,
 }

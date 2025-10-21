@@ -27,7 +27,7 @@ use notify::{EventKind, RecommendedWatcher};
 
 use crate::{
     error::OraError,
-    watcher::{debounce::Debouncer, handler::FileIndexHandler, index, watcher::setup_file_watcher},
+    watcher::{debounce::Debouncer, event::setup_file_watcher, handler::FileIndexHandler, index},
 };
 
 /// A service that monitors file system changes and maintains an up-to-date search index.
@@ -52,22 +52,22 @@ use crate::{
 pub struct WatcherService {
     /// Handles file system events and updates the search index.
     handler: FileIndexHandler,
-    
+
     /// Handle to the debouncer thread.
     debouncer_thread: Option<JoinHandle<()>>,
-    
+
     /// Handle to the handler thread.
     handler_thread: Option<JoinHandle<()>>,
-    
+
     /// Channel for signaling shutdown to background threads.
     shutdown_tx: Option<Sender<()>>,
-    
+
     /// Debounce duration for file system events.
     duration: Duration,
-    
+
     /// Path being monitored for changes.
     watch_path: PathBuf,
-    
+
     /// The underlying file system watcher.
     watcher: Option<RecommendedWatcher>,
 }
@@ -149,10 +149,10 @@ impl WatcherService {
     ///     &PathBuf::from("/path/to/notes"),
     ///     Duration::from_millis(100)
     /// )?;
-    /// 
+    ///
     /// // Start monitoring
     /// watcher.run()?;
-    /// 
+    ///
     /// // Service is now running in background threads
     /// # Ok(())
     /// # }
@@ -231,9 +231,9 @@ impl WatcherService {
     ///     &PathBuf::from("/path/to/notes"),
     ///     Duration::from_millis(100)
     /// )?;
-    /// 
+    ///
     /// watcher.run()?;
-    /// 
+    ///
     /// // Later, when shutting down:
     /// watcher.shutdown()?;
     /// # Ok(())

@@ -162,8 +162,6 @@ impl LocalNote {
         write_atomic(&self.path, self.content.as_bytes())
     }
 
-
-
     /// Deletes this note from disk.
     ///
     /// # Errors
