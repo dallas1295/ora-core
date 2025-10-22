@@ -1,4 +1,4 @@
-//! Low-level file system watcher setup.
+//! Low-level file system event setup.
 //!
 //! This module provides the foundation for file system monitoring using
 //! the `notify` crate. It sets up a recursive file system watcher that
@@ -45,7 +45,7 @@ use std::{
 /// ```rust,no_run
 /// use notify::EventKind;
 /// use std::sync::mpsc::channel;
-/// use ora_core::watcher::watcher::setup_file_watcher;
+/// use ora_core::watcher::event::setup_file_watcher;
 /// use std::path::Path;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
