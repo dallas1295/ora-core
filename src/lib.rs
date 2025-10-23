@@ -1,4 +1,4 @@
-//! # ora-core
+//! # ora_core
 //!
 //! A powerful Rust library for managing local Markdown notes with real-time file system watching,
 //! full-text search, and SQLite-based indexing.

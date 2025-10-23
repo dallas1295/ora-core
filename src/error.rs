@@ -1,7 +1,7 @@
-//! Unified error handling for the ora-core library.
+//! Unified error handling for the ora_core library.
 //!
 //! This module defines the central error type [`OraError`] that encompasses all
-//! possible error conditions that can occur throughout the ora-core library.
+//! possible error conditions that can occur throughout the ora_core library.
 //! It provides a consistent error interface that wraps domain-specific errors
 //! from notes, shelves, database operations, and file system watching.
 //!
@@ -26,11 +26,11 @@ use thiserror::Error;
 
 /// A convenient type alias for results that use [`OraError`].
 ///
-/// This is the primary result type used throughout the ora-core library,
+/// This is the primary result type used throughout the ora_core library,
 /// providing a consistent way to handle operations that can fail.
 pub type OraResult<T> = Result<T, OraError>;
 
-/// The unified error type for the ora-core library.
+/// The unified error type for the ora_core library.
 ///
 /// This enum represents all possible error conditions that can occur when
 /// working with notes, shelves, search functionality, and file system watching.
