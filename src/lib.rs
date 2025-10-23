@@ -140,6 +140,7 @@ pub mod watcher;
 pub use domain::LocalNote;
 pub use error::{OraError, OraResult};
 pub use search::{Query, SearchOptions};
+pub use shelf::manager::ShelfManager;
 pub use shelf::storage::Shelf;
 pub use watcher::index::Index;
 pub use watcher::service::WatcherService;
