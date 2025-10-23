@@ -136,5 +136,10 @@ pub mod search;
 pub mod shelf;
 pub mod watcher;
 
-/// Re-exports the most commonly used types for convenience.
+// Public API exports
+pub use domain::LocalNote;
 pub use error::{OraError, OraResult};
+pub use search::{Query, SearchOptions};
+pub use shelf::storage::Shelf;
+pub use watcher::index::Index;
+pub use watcher::service::WatcherService;
